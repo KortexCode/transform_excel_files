@@ -5,7 +5,7 @@ const XLSX = require("xlsx");
 // Ruta de origen (donde están tus archivos actuales)
 /* const rutaOrigen = "/mnt/c/Users/KortexCode/Downloads/fichas_evaluacion_automate/Horas descargadas"; */
 const rutaOrigen =
-  "/mnt/c/Users/KortexCode/Servicio Nacional de Aprendizaje/Analítica 9521 - Documentos/9521";
+  "/mnt/c/Users/KortexCode/Documents/servicio_nacional_sena/9521_2026/";
 
 try {
   // Crear la carpeta de destino si no existe
