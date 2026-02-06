@@ -1,10 +1,14 @@
 /*Este módulo filtrará las competencias y las horas asociadas a ella por cada ficha que se
 se le envíe*/
-const fs = require("fs-extra");
+/* const fs = require("fs-extra");
 const XLSX = require("xlsx");
-const path = require("path") ;
+const path = require("path") ; */
 
-module.exports = function leerArchivoAFiltrar(numFicha){
+import fs from "fs-extra";
+import path from "path" ;
+import XLSX from "xlsx";
+
+export default function leerArchivoAFiltrar(numFicha){
   const rutaOrigenAfiltrar = "/mnt/c/Users/KortexCode/Downloads/Documentos de trabajo/programacion_horas/hojaParaFiltrar";
   // 1. Leer todos los archivos en la carpeta origen
   const archivos = fs.readdirSync(rutaOrigenAfiltrar);

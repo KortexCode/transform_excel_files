@@ -1,9 +1,10 @@
-const fs = require('fs-extra');
-const path = require( 'path');
-const excelJs = require('exceljs');
+import fs from 'fs-extra';
+import path from 'path';
+import excelJs from 'exceljs';
 //Ruta origen de los archivos
 const rutaOrigen = "/mnt/c/Users/KortexCode/Downloads/Documentos de trabajo/programacion_horas/archivos_terminados2";
 const rutaArchivoGuardado = "/mnt/c/Users/KortexCode/Downloads/Documentos de trabajo/programacion_horas/archivos_terminados2/resultado";
+
 async function modificarTablaExcel(rutaArchivo, rutaArchivoFinal) {
     //Crear un nuevo libro limpio
     const workBook = new excelJs.Workbook();

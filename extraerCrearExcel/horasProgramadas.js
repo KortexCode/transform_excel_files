@@ -1,16 +1,21 @@
-const fs = require("fs-extra");
+/* const fs = require("fs-extra");
 const path = require("path") ;
 const Exceljs = require("exceljs");
-const leerArchivoAFiltrar = require("./filtrarTablaPowerBi");
+const leerArchivoAFiltrar = require("./filtrarTablaPowerBi"); */
+import fs from "fs-extra";
+import path from "path" ;
+import Exceljs from "exceljs";
+import leerArchivoAFiltrar from "./filtrarTablaPowerBi.js";
+import {programs} from "./tokenList.js"
 
 const rutaOrigen = "/mnt/c/Users/KortexCode/Downloads/Documentos de trabajo/programacion_horas";
 const rutaNueva = "/mnt/c/Users/KortexCode/Downloads/Documentos de trabajo/programacion_horas/Resultados";
 
-const tokenList = [
-  '3293258',
- ];
+const tokenList = programs.gestionDocumental;
+console.log("Tokens", tokenList);
 
- function copiarFormato(origen, destino) {
+function copiarFormato(origen, destino) {
+ 
   // 1. Valor
   /* destino.value = origen.result ?? origen.value; */
   destino.value = origen.value;
@@ -42,50 +47,67 @@ const tokenList = [
   if (origen.numFmt) {
     destino.numFmt = origen.numFmt;
   }
+
+
 }
 
-async function leerArchivoDeExcel(rutaArchivo, rutaNuevo) {
+async function leerArchivoDeExcel(rutaArchivo) {
   const workBook = new Exceljs.Workbook();
   await workBook.xlsx.readFile(rutaArchivo);
   const hoja = workBook.getWorksheet(workBook.id);
-  
+  const rutaFinal = `${rutaNueva}/${hoja.name}.xlsx`;
+
+  // 7. Verificar si el archivo ya existe en la ruta de destino
+  if (fs.existsSync(rutaFinal)) {
+    console.log(`⚠️ El archivo ${hoja.name}.xlsx ya existe en la ruta de destino. Se omitirá la conversión.`);
+    console.log("-----------------")
+    return; // Saltar a la siguiente iteración del bucle
+  }
+  //Recorrer la lista de fichas del programa
   tokenList.forEach((token) => {
     //Extraer las competencias y sus horas en ejecutadas por cada token
     const competenciaHorasList = leerArchivoAFiltrar(token);
     //Agregar una hoja (copia de la original) con el nombre de la ficha del ciclo actual
     const newHoja = workBook.addWorksheet(token);
     //Recorrer la hoja original
+    let filaAModificarAparte = null;
     hoja.eachRow({ includeEmpty: true }, (row, rowNumber) => {
       const filaNueva = newHoja.getRow(rowNumber); //Obtener fila actual de la hoja nueva
       //Obtener celda actual en la fila de la hoja nueva
       row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
         copiarFormato(cell, filaNueva.getCell(colNumber)); 
+        if(cell.value == null) return;
+        if(cell.text == "COMPETENCIA" || cell.value == "COMPETENCIA"){
+          filaAModificarAparte = filaNueva;
+        }
         /* filaNueva.getCell(colNumber).value = cell.value; */
       });
+     
       //En contrar coincidencia entre las competencias y el valor de la celda actual
       //de la fila de la hoja origen
       const matchData = competenciaHorasList.find((compHora) => {
         const valorCompetencia = compHora.competencia.toLowerCase().replace(/\s+/g,' ').trim();
-        const valor = row.getCell('D').value ?? "Soy Nulo XD";
-        if(typeof valor == "number") {
-          return valor == valorCompetencia 
-        }
+        const valor = row.getCell('C').text ?? "Soy Nulo XD";
         const valorCelda = valor.toLowerCase().replace(/\s+/g,' ').trim();
         return valorCelda == valorCompetencia  
       });
       if(matchData){
-        filaNueva.getCell('G').value = Math.ceil(matchData.horas);
-        console.log("Valor", filaNueva.getCell('G').value) 
+        const diseno = filaNueva.getCell('F').value;
+        filaNueva.getCell('F').value = Math.ceil(matchData.horas);
+        filaNueva.getCell('G').value = Math.abs(diseno - Math.ceil(matchData.horas));
+        console.log("Valor", filaNueva.getCell('F').value) 
       }
       filaNueva.commit();
     });
+    filaAModificarAparte.getCell('F').value = "HORAS PROGRAMADAS";
+    filaAModificarAparte.getCell('G').value = "PENDIENTES";
   });
   
 /*   newHoja.eachRow((row, index) => {
     console.log(row.getCell('F').value, index)
   });
      */
-  await workBook.xlsx.writeFile(rutaNuevo)  
+  await workBook.xlsx.writeFile(rutaFinal)  
 }
 
 
@@ -97,22 +119,16 @@ try {
     //2. Se extrae el nombre base y extensión de archivo
     const extension = path.extname(archivo).toLowerCase();
     const nombreBase = path.basename(archivo, extension);
-    const rutaNuevoArchivo = path.join(rutaNueva, `${nombreBase}.xlsx`);
     console.log("nombre base: ", nombreBase + " " + extension);
 
     // 5. Leer solo archivos de Excel (.xls, .csv, .xlsx)
     if ([".xls"].includes(extension) || [".xlsx"].includes(extension)) {
       //.6 Se genera la ruta donde está el archivo que se va a manipular
       const rutaArchivo = path.join(rutaOrigen, archivo);
-      console.log("RUTA ARCHIVO", rutaArchivo)
-      // 7. Verificar si el archivo ya existe en la ruta de destino
-      if (fs.existsSync(rutaNuevoArchivo)) {
-        console.log(`⚠️ El archivo ${nombreBase}.xlsx ya existe en la ruta de destino. Se omitirá la conversión.`);
-        console.log("-----------------")
-        return; // Saltar a la siguiente iteración del bucle
-      }
+      console.log("RUTA ARCHIVO", rutaArchivo);
+     
       //8. Leer archivo, copiar valores y crear excel resultante
-      leerArchivoDeExcel(rutaArchivo, rutaNuevoArchivo)
+      leerArchivoDeExcel(rutaArchivo)
       .catch(e => console.log("Error durant lectura de archivo: ", e));
       console.log("🎉 Creación de archivo Completado.");
     } else {
